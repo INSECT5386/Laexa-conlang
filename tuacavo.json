@@ -278,10 +278,10 @@
         "Pin": {
             "meaning": "실행/계획",
             "derivation":{
-                "Pinrdy": "준비/대기 / Pinrdi.핀르디",
-                "Pinrun": "실행 중 / Pinrun.핀런",
-                "Pinend": "완료/종료 / Pinend.피넨드",
-                "Pinhold": "일시 중단/보류 / Pinhold. 핀홀드"
+                "rdy": "준비/대기 / rdi.르디",
+                "run": "실행 중 / run.런",
+                "end": "완료/종료 / end.엔드",
+                "hold": "일시 중단/보류 / hold. 홀드"
             }
         },
         "Val": "가치 존재",
@@ -297,21 +297,20 @@
         "uta": "상상/가능성"
     },
     "Examples": {
-        "{Im(Pinrun(Aeg))} @Ym": "나는 너에게 가는 중이다."
+        "{ImAegrun} @Ym": "나는 너에게 가는 중이다.",
+        "{ImAegend @Eceaf}~ a'{ImAemend @Ym}, Tn, Ym,ImAusi": "나는 카페에 도착해서 너를 만났고, 지금 너에게 말하고 있다."
     },
     "GlobalSettings": {
         "meaning": "전체적 설정. 언어의 규칙 정의.",
         "N1": {
-            "setting": "Scope_Tags는 문장의 끝부분에서는 생략 가능.",
-            "example": {"{ImAcavo} @Y eth {Lai~ a'Zaa}": "의르 임아카보 우르 투 유 에쓰 의르 라이~ 아'재 우르 -> 의르 임아카보 우르 투 유 에쓰 의르 라이~ 아'재"}
+            "setting": "Scope_Tags는 문장의 끝부분에서는 생략 가능."
         },
         "N2": {
             "setting": "aa는 ae로 발음.",
             "example": {"Zaa": "Zae(=재)"}
         },
         "N3": {
-            "setting": "C는 Ky로 발음.",
-            "example": {"Acapo": "Acyapo(=아캬포)"}
+            "setting": "C는 Ky로 발음."
         },
         "N4": {
             "setting": "J는 Jy로 발음.",
