@@ -92,7 +92,7 @@ class LangTranslator(Transformer):
                 "#Burnout": "번아웃", "#Flow": "몰입",
 
                 # 5. 행동 및 작용 (A Series)
-                "Aca": "행동", "Ae": "물리적 행동을 ", "Au": "언어적 행동을 ", "Aa": "조작을 ", "Aeg": "가다", "Aeu": "걷다", "Aefo": "고치다", "Aef": "날다", "Aep": "놀다", "Aeup": "누르다", "Aec": "닫다", "Aes": "달리다", "Ael": "당기다", "Aet": "던지다", "Aek": "돌보다", "Aeir": "돕다", "Aect": "들다", "Aegr": "따라가다", "Aetir": "따라하다", "Aetu": "액체를 따르다", "Aelu": "떨어지다", "Aei": "뛰다", "Aeal": "마시다", "Aem": "만나다", "Aema": "만들다", "Aetou": "만지다", "Aer": "먹다", "Aelr": "밀다", "Aeze":"받다", "Aelo": "보다", "Aebo": "부수다", "Aeop": "서다", "Aeso": "숨다", "Aelit": "쉬다", "Aetur": "심다", "Aeur": "앉다", "Aeun": "없다", "Aein": "있다", "Aecr": "열다", "Aeol": "입다", "Aesl": "자다", "Aekir": "자라다", "Aeku": "자르다", "Aeca": "잡다", "Aeki": "주다", "Ausi": "말하다", "Aues": "읽다", "Auer": "쓰다", "Auli": "듣다", "Aulo": "소리 지르다", "Auls": "속삭이다",
+                "Aca": "행동", "Ae": "물리적 행동을 ", "Au": "언어적 행동을 ", "Aa": "조작을 ", "Aeg": "가다", "Aeu": "걷다", "Aefo": "고치다", "Aef": "날다", "Aep": "놀다", "Aeup": "누르다", "Aec": "닫다", "Aes": "달리다", "Ael": "당기다", "Aet": "던지다", "Aek": "돌보다", "Aeir": "돕다", "Aect": "들다", "Aegr": "따라가다", "Aetir": "따라하다", "Aetu": "액체를 따르다", "Aelu": "떨어지다", "Aei": "뛰다", "Aeal": "마시다", "Aem": "만나다", "Aema": "만들다", "Aetou": "만지다", "Aer": "먹다", "Aelr": "밀다", "Aeze":"받다", "Aelo": "보다", "Aebo": "부수다", "Aeop": "서다", "Aeso": "숨다", "Aelit": "쉬다", "Aetur": "심다", "Aeur": "앉다", "Aeun": "없다", "Aein": "있다", "Aecr": "열다", "Aeol": "입다", "Aesl": "자다", "Aekir": "자라다", "Aeku": "자르다", "Aeca": "잡다", "Aeki": "주다", "Ausi": "말하다", "Aues": "읽다", "Auer": "쓰다", "Auli": "듣다", "Aulo": "소리 지르다", "Auls": "속삭이다", "Aulc": "대화하다",
                 "Coa": "협력/협동", "Ata": "조언/지도", "Ta": "신뢰/유대", "Exa": "교환/거래",
                 "Ka": "충돌/오류", "Pa": "규칙/계약", "Val": "가치", "Has": "소유/연결",
 
@@ -226,7 +226,7 @@ parser = Lark(my_grammar, start='start', parser='earley')
 translator = LangTranslator()
 
 test_cases = [
-    "{ImAegend @Eceaf}~ a'{ImAemend @Ym}, Tn, Ym,ImAusi"
+    "{ImAegend @Eceaf}~ a'{ImAemend @Ym}, Tn, ImAulc @Ym"
 ]
 
 print("## 복합 태그 보정 번역 결과 ##\n")
