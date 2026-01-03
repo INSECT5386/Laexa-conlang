@@ -23,8 +23,8 @@ my_grammar = r"""
     
     vector_suffix: VECTOR_TAG [NUMBER] [QUESTION]
 
-    CAUSAL_OP: /(!|-|~)+\s*a'/
-    DELAYED_OP: /(!|-|~)+\s*sa'/
+    CAUSAL_OP: /\s*a'/
+    DELAYED_OP: /\s*sa'/
     EN: "en"
     COMMA: ","
     NO: "no"
@@ -226,7 +226,7 @@ parser = Lark(my_grammar, start='start', parser='earley')
 translator = LangTranslator()
 
 test_cases = [
-    "{ImAegend @Eceaf}~ a'{ImAemend @Ym}, Tn, ImAulc @Ym"
+    "{ImAegend @Eceaf} a'{ImAemend @Ym}, Tn, ImAulc @Ym"
 ]
 
 print("## 복합 태그 보정 번역 결과 ##\n")
