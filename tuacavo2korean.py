@@ -92,7 +92,16 @@ class LangTranslator(Transformer):
                 "#Burnout": "번아웃", "#Flow": "몰입",
 
                 # 5. 행동 및 작용 (A Series)
-                "Aca": "행동", "Ae": "물리적 행동을 ", "Au": "언어적 행동을 ", "Aa": "조작을 ", "Aeg": "가다", "Aeu": "걷다", "Aefo": "고치다", "Aef": "날다", "Aep": "놀다", "Aeup": "누르다", "Aec": "닫다", "Aes": "달리다", "Ael": "당기다", "Aet": "던지다", "Aek": "돌보다", "Aeir": "돕다", "Aect": "들다", "Aegr": "따라가다", "Aetir": "따라하다", "Aetu": "액체를 따르다", "Aelu": "떨어지다", "Aei": "뛰다", "Aeal": "마시다", "Aem": "만나다", "Aema": "만들다", "Aetou": "만지다", "Aer": "먹다", "Aelr": "밀다", "Aeze":"받다", "Aelo": "보다", "Aebo": "부수다", "Aeop": "서다", "Aeso": "숨다", "Aelit": "쉬다", "Aetur": "심다", "Aeur": "앉다", "Aeun": "없다", "Aein": "있다", "Aecr": "열다", "Aeol": "입다", "Aesl": "자다", "Aekir": "자라다", "Aeku": "자르다", "Aeca": "잡다", "Aeki": "주다", "Ausi": "말하다", "Aues": "읽다", "Auer": "쓰다", "Auli": "듣다", "Aulo": "소리 지르다", "Auls": "속삭이다", "Aulc": "대화하다",
+                "Aca": "행동", "Ae": "물리적 행동을 ", "Au": "언어적 행동을 ", "Aa": "조작을 ", "Aeg": "이동", "Aete": "교육",
+                "Aewa": "대기(어떤 현상이나 상태가 나타나기를 준비하며 머무르는 행위)", "Aeta": "사육", "Aefo": "수리", "Aef": "비행", "Aep": "유희",
+                "Aeup": "가압(힘이나 압력을 가하다)", "Aec": "폐쇠", "Aes": "빠른 이동", "Aet": "투척", "Aek": "보살핌", "Aeir": "조력/지원", "Aegr": "추종/추적",
+                "Aetir": "모방", "Aetu": "주입", "Aelu": "낙하", "Aei": "도약", "Aeal": "음용", "Aem": "대면", "Aema": "제작", "Aetou": "접촉", "Aer": "섭취",
+                "Aeze":"수령", "Aelo": "시청/관찰", "Aebo": "파괴", "Aeop": "기립(아래에 있던 몸을 일으켜 세우는 동작(=일어서다))", "Aeso": "은폐/잠적", "Aelit": "휴식",
+                "Aetur": "식재(나무나 풀을 땅에 박아 넣는 행위)", "Aeur": "착석", "Aeun": "비존재", "Aein": "존재", "Aecr": "개방", "Aeol": "착용", "Aesl": "취침",
+                "Aekir": "성장", "Aeku": "절단", "Aeca": "파지(물건을 손에 쥐고 놓치지 않게 유지하는 행위)", "Aeki": "제공", "Aena": "생존", "Aeba": "사망",
+                "Aetat":"포획/검거", "Ausi": "발화(심리적인 생각이나 언어를 입 밖으로 내어 소리를 내는 물리적 행위)", "Aues": "독해", "Auer": "작성", "Auli": "청취", "Aulo": "고성(목소리를 높여 크게 소리를 냄.)", "Auls": "귓속말", "Aulc": "의사소통",
+                "Ausk": "질문",
+
                 "Coa": "협력/협동", "Ata": "조언/지도", "Ta": "신뢰/유대", "Exa": "교환/거래",
                 "Ka": "충돌/오류", "Pa": "규칙/계약", "Val": "가치", "Has": "소유/연결",
 
@@ -103,8 +112,7 @@ class LangTranslator(Transformer):
                 
                 # 7. 시간 및 슬롯 (T-S Series)
                 "Z": "현재 상황", "T": "시간", "K": "원인", "F": "결과/작용", "N": "가치 판단",
-                "Tp": "과거", "Tf": "미래", "Tn": "현재", "Tef": "진행형",
-                "rdy": "-대기", "run": "-를 하고있다", "end": "-를 했다.", "hold": "-중단",
+                "run": " 중 이다.", "end": "했다.", "hold": "-중단", "now": "하다", "utur": " 할 것이다.",
 
                 # 8. 성격 및 수치 속성 (Certainty & Human)
                 "ic": "확정", "ec": "가변", "no": "안 함/아님", "Ju": "반복", "R": " 은(는) ",
@@ -208,11 +216,11 @@ class LangTranslator(Transformer):
             l, r = self._recursive_join(items[0]), self._recursive_join(items[2])
             # "A => B" -> "A하면 B하게 된다"
             op = "a'" in str(items[1])
-            symbol = "하게 되며, 이로 인해 " if op else "하고 나서 "
+            symbol = " 그로인해 " if op else "하고 나서 "
             return f"{l}{symbol}{r}"
     def sequence_expr(self, items):
         l, r = self._recursive_join(items[0]), self._recursive_join(items[2])
-        return f"{l} + {r}" if str(items[1]) == "en" else f"{l}, {r}"
+        return f"{l}와 {r}가 동시 발생." if str(items[1]) == "en" else f"{l}, {r}"
     def expressions(self, items): return "\n".join([self._recursive_join(i).strip() for i in items if i])
     def start(self, items):
             res = self._recursive_join(items)
@@ -226,7 +234,7 @@ parser = Lark(my_grammar, start='start', parser='earley')
 translator = LangTranslator()
 
 test_cases = [
-    "{ImAegend @Eceaf} a'{ImAemend @Ym}, Tn, ImAulc @Ym"
+    "{ImAegend @Eceaf} a'{ImAemend @Ym}, ImAulcnow @Ym"
 ]
 
 print("## 복합 태그 보정 번역 결과 ##\n")
