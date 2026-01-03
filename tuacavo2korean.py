@@ -1,246 +1,324 @@
-from lark import Lark, Transformer, Tree, Token
-
-my_grammar = r"""
-    ?start: expressions
-    ?expressions: (expression | WS)+
-    ?expression: causal_expr | sequence_expr | atom
-    ?causal_expr: expression CAUSAL_OP expression | expression DELAYED_OP expression
-    ?sequence_expr: expression EN expression | expression COMMA expression | expression JU_TAG expression -> repeated_action
-    
-    ?atom: (tag_content | grouping) [target] [eth_property] [EXCLAMATION]
-         | target [eth_property] [EXCLAMATION]
-
-    ?tag_content: tag_list [NUMBER] [vector_suffix] [bracket_desc]
-
-    grouping: "{" expression "}"                   -> logic_group
-            | "[" expression "]"                   -> action_group
-            | "(" expression ")"                   -> inner_group
-
-    tag_list: (ID_TAG | TAG_TOKEN | FIT_TAG | CERTAIN_TAG | HUMAN_TAG | NO | QUESTION | SLOT_TAG | R_TAG)+
-    bracket_desc: "(" (WORD | TAG_TOKEN | expression) ")"
-    target: "@" (ID_TAG | TAG_TOKEN | grouping | WORD | bracket_desc | atom)
-    eth_property: "eth" (tag_list | grouping | PIN_TAG | SLOT_TAG | WORD | NUMBER | causal_expr) [bracket_desc]
-    
-    vector_suffix: VECTOR_TAG [NUMBER] [QUESTION]
-
-    CAUSAL_OP: /\s*a'/
-    DELAYED_OP: /\s*sa'/
-    EN: "en"
-    COMMA: ","
-    NO: "no"
-    QUESTION: "?"
-    EXCLAMATION: "!" 
-    R_TAG: "R"
-    JU_TAG: "Ju"
-
-    ID_TAG: "Im" | "Ym" | "Om"
-    TAG_TOKEN: /[A-Z][A-Za-z]*/ 
-    PIN_TAG: "Pinrdy" | "Pinrun" | "Pinend" | "Pinhold"
-    SLOT_TAG: /T\d+/ | "Z" | "T" | "K" | "F" | "N" | "Tp" | "Tf" | "Tn" | "Tef" | "Td" | "Tei"
-    VECTOR_TAG: "Pu" | "Mu" | "Cu" | "Xu" | "Su" | "Hu" | "Ru" | "Lu" | "Vu"
-    FIT_TAG: "#Burnout" | "#Flow"
-    CERTAIN_TAG: "ic" | "ec"
-    HUMAN_TAG: "eta" | "ata" | "uta"
-    WORD: /[a-zA-Z]+/
-    NUMBER: /[0-9]+/
-
-    %import common.WS
-    %ignore WS
-"""
-
-def Josa(text, josa_type):
-    """
-    text: 대상 단어 (예: '대학교', '판단')
-    josa_type: '을/를', '이/가', '은/는' 중 선택
-    """
-    if not text: return text
-    # 마지막 글자의 유니코드 확인 (받침 유무 판단)
-    last_char = text.strip()[-1]
-    if not ('가' <= last_char <= '힣'): return text + josa_type.split('/')[1]
-    
-    has_jongsung = (ord(last_char) - ord('가')) % 28 > 0
-    if josa_type == '을/를':
-        return text + ('을' if has_jongsung else '를')
-    elif josa_type == '이/가':
-        return text + ('이' if has_jongsung else '가')
-    elif josa_type == '은/는':
-        return text + ('은' if has_jongsung else '는')
-    return text
-
-class LangTranslator(Transformer):
-    def __init__(self):
-
-        self.dict_map = {
-                # 1. 인칭 및 기본 주체 (Identity)
-                "Im": "내(화자)가 ", "Ym": "네(청자)가 ", "Om": "제3자가 ",
-                "Dg": "상급자", "Suba": "하위 객체",
-
-                # 2. 결핍 및 해소 (V-S Series)
-                "Va": "결핍", "Vab": "육체적 결핍", "Vam": "정신적 결핍", "Var": "물리적 결핍",
-                "Sa": "해소/획득", "Sab": "육체적 해소", "Sam": "정신적 해소", "Sar": "물리적 해소",
-                
-                # 3. 인지 및 정보 (L Series)
-                "La": "지식", "Lam": "기억", "Lai": "정보입력", "Lac": "추론", "Lav": "확인완료",
-                "Lia": "데이터", "Liad": "수치 데이터", "Liat": "텍스트 정보", "Liam": "미디어 정보",
-                
-                # 4. 감정 및 심리 상태 (R-Z Series)
-                "Ra": "거부/분노", "Rai": "짜증", "Raf": "공포", "Ras": "슬픔",
-                "Za": "평온/수용", "Zas": "휴식", "Zaa": "동의", "Zaf": "충족",
-                "Fa": "해상도", "Fam": "집중", 
-                "Ena": "에너지", "Enab": "활력",
-                "Mita": "의지", "Mitam": "도덕", "Mitat": "의도/목적", "Mitar": "의욕/사기",
-                "#Burnout": "번아웃", "#Flow": "몰입",
-
-                # 5. 행동 및 작용 (A Series)
-                "Aca": "행동", "Ae": "물리적 행동을 ", "Au": "언어적 행동을 ", "Aa": "조작을 ", "Aeg": "이동", "Aete": "교육",
-                "Aewa": "대기(어떤 현상이나 상태가 나타나기를 준비하며 머무르는 행위)", "Aeta": "사육", "Aefo": "수리", "Aef": "비행", "Aep": "유희",
-                "Aeup": "가압(힘이나 압력을 가하다)", "Aec": "폐쇠", "Aes": "빠른 이동", "Aet": "투척", "Aek": "보살핌", "Aeir": "조력/지원", "Aegr": "추종/추적",
-                "Aetir": "모방", "Aetu": "주입", "Aelu": "낙하", "Aei": "도약", "Aeal": "음용", "Aem": "대면", "Aema": "제작", "Aetou": "접촉", "Aer": "섭취",
-                "Aeze":"수령", "Aelo": "시청/관찰", "Aebo": "파괴", "Aeop": "기립(아래에 있던 몸을 일으켜 세우는 동작(=일어서다))", "Aeso": "은폐/잠적", "Aelit": "휴식",
-                "Aetur": "식재(나무나 풀을 땅에 박아 넣는 행위)", "Aeur": "착석", "Aeun": "비존재", "Aein": "존재", "Aecr": "개방", "Aeol": "착용", "Aesl": "취침",
-                "Aekir": "성장", "Aeku": "절단", "Aeca": "파지(물건을 손에 쥐고 놓치지 않게 유지하는 행위)", "Aeki": "제공", "Aena": "생존", "Aeba": "사망",
-                "Aetat":"포획/검거", "Ausi": "발화(심리적인 생각이나 언어를 입 밖으로 내어 소리를 내는 물리적 행위)", "Aues": "독해", "Auer": "작성", "Auli": "청취", "Aulo": "고성(목소리를 높여 크게 소리를 냄.)", "Auls": "귓속말", "Aulc": "의사소통",
-                "Ausk": "질문",
-
-                "Coa": "협력/협동", "Ata": "조언/지도", "Ta": "신뢰/유대", "Exa": "교환/거래",
-                "Ka": "충돌/오류", "Pa": "규칙/계약", "Val": "가치", "Has": "소유/연결",
-
-                # 6. 환경 및 장소 (E Series)
-                "Egoc": "장소", "Egob": "사물", "Egev": "환경 조건", "Exi": "시스템",
-                "Ecuo": "집", "Ecup": "경찰서", "Ecuf": "소방서", "Ecear": "식당", "Eceaf": "카페",
-                "Secas": "초등학교", "Mecas": "중학교", "Hecas": "고등학교", "Uecas": "대학교",
-                
-                # 7. 시간 및 슬롯 (T-S Series)
-                "Z": "현재 상황", "T": "시간", "K": "원인", "F": "결과/작용", "N": "가치 판단",
-                "run": " 중 이다.", "end": "했다.", "hold": "-중단", "now": "하다", "utur": " 할 것이다.",
-
-                # 8. 성격 및 수치 속성 (Certainty & Human)
-                "ic": "확정", "ec": "가변", "no": "안 함/아님", "Ju": "반복", "R": " 은(는) ",
-                "eta": "직관", "ata": "공감", "uta": "상상",
-
-                # 9. 벡터 및 변동 (Vector)
-                "Pu": "강화", "Mu": "약화", "Cu": "반전", "Xu": "모호", 
-                "Su": "물리적 강화", "Hu": "기계적 수행", "Ru": "불규칙", "Lu": "명확", "Vu": "불안정"
+{
+    "Z": {
+        "type": "slot tag",
+        "meaning": "현재 상황 / 현상"
+    },
+    "T": {
+        "type": "slot tag",
+        "meaning": "시간 / 흐름",
+        "example": "T1400 -> 14시00분(절대 시간), TdR3h -> 3시간 동안 지속, Tei -> 영구적 상태"
+    },
+    "K": {
+        "type": "slot tag",
+        "meaning": "원인 / 전제"
+    },
+    "F": {
+        "type": "slot tag",
+        "meaning": "결과 / 작용"
+    },
+    "N": {
+        "type": "slot tag",
+        "meaning": "생각 / 가치 판단"
+    },
+    "Im": {
+        "type": "id tag",
+        "meaning": "화자 (나)",
+        "example": "ImAa -> 임애/내가 조작한다."
+    },
+    "Ym": {
+        "type": "id tag",
+        "meaning": "청자 (너)",
+        "example": "YmAa -> 윰애/너가 조작한다."
+    },
+    "Om": {
+        "type": "id tag",
+        "meaning": "제3자/외부 객체",
+        "example": "OmAa ->  씀애/누군가가 조작한다."
+    },
+    "Logic_Gates": {
+        "a'- ": {
+            "meaning":"인과관계의 흐름 (A 때문에 B가 됨). / >"
+        },
+        " aya ": "상호 영향 (A와 B가 서로 주고받음) / <>",
+        "sa'- ": {
+            "meaning": "지연된 인과 (A가 시간이 흐른 뒤 B를 유발함) / ~>"
+        },
+        " | ": "a 혹은 b 중 하나. 예시: A|B. / A so B.에이 소 비",
+        " en ": "동시 발생 (A와 B가 동시에 일어남). / =",
+        " ! ": "즉각적인 대응이 필요한 데이터 (경고/위험).",
+        " ? ": "데이터 확인 및 정보 탐색 요청 (질문).",
+        " , ": "나열 및 병렬 처리",
+        " Eth ": "데이터의 목적 및 성격 규정 (꼬리표). / ;",
+        " no ": "부정 (Not/None) / ~",
+        " R ": "A는 B이다. / :"
+    },
+    "Vector_Tags": {
+        "Pu": "확장, 상승, 강화",
+        "Mu": "축소, 하락, 약화",
+        "Cu": "반전, 모순, 거부 (행동에서는 소극성) / Cu.큐",
+        "Xu": "설명하기 힘든 모호한 상태 / Xu.쑤",
+        "Su": "적극적, 물리적 강화 / Su.수",
+        "Ju": "반복, 루프. /Jyu.쥬",
+        "Hu": "효율적, 기계적 수행 / Hu.후",
+        "Ru": "거칠음/불규칙",
+        "Lu": "투명함/명확함",
+        "Vu": "취약함/불안정"
+    },
+    "Number": {
+        "example": "T1412 -> 트 외세외테 / Ra50Pu -> 라 네제푸",
+        "0": "Ze",
+        "1": "Oe",
+        "2": "Te",
+        "3": "Fe",
+        "4": "Se",
+        "5": "Ne",
+        "6": "Ge",
+        "7": "Le",
+        "8": "Me",
+        "9": "Ka"
+    },
+    "Vector_Suffix_Extension": {
+        "[(1~5) × 10 + (1~5)]": {
+            "setting": "지속성은 10의 자리(1: 10분 미만, 2: 30분 미만 및 10분 이상, 3: 1시간 미만 및 30분 이상, 4: 3시간 미만 및 1시간 이상  5: 3시간 이상), 변동성은 1의 자리(1: 안정적, 2: 불안한, 3: 불안정한, 4: 빠름, 5: 매우 빠름).",
+            "example": "Ra50Pu -> 고강도 분노가 매우 오래 지속됨. (라네제푸)"
+        },
+        "@": "대상 지정 (Target) / tu.투"
+    },
+    "Scope_Tags": {
+        "()": "내부, 본질, 비공개 데이터 (내면) / ( : nar.나르, ) : mr.므르",
+        "[]": "외부, 표면, 공개 데이터 (행동) / [ : nor.노르, ] : nr.느르",
+        "Md": "경계, 필터링 지점 / mor.모르",
+        "{}": "논리적 그룹핑 / { : uir.의르, } : ur 우르"
+    },
+    "Certainy_Tags": {
+        "ic": "확정된, 진리",
+        "ec": "가변적인, 추측"
+    },
+    "Primary_Categories": {
+        "Va": "결핍/필요 (Vab:육체, Vam:정신, Var:물리)",
+        "La": "인지/지식 (Lam:기억, Lai:정보입력, Lac:추론, Lav:확인완료)",
+        "Lia": "정보 및 데이터 (Liad : 수치 데이터, Liat: 텍스트/언어 정보, Liam: 미디어/시작 정보",
+        "Ka": "충돌/대립, 오류",
+        "Sa": "해소/획득 (Sab:육체, Sam:정신, Sar:물리)",
+        "Dg": "위계/상급자",
+        "Suba": "하위/객체",
+        "Pa": "규칙/계약",
+        "Za": "평온/수용 (Zas:휴식, Zaa(Zoe) 동의, Zaf:충족)",
+        "Ra": "분노/거부 (Rai:짜증, Raf:공포, Ras:슬픔)",
+        "Coa": "협력/협동",
+        "Ata": "조언/지도",
+        "Ta": "신뢰/유대",
+        "Exa": "교환/거래",
+        "Fa": {
+            "meaning": "해상도",
+            "derivation":{
+                "Fam": "집중"
             }
-
-    def _recursive_join(self, item):
-            if item is None: return ""
-            if isinstance(item, list): return "".join([self._recursive_join(i) for i in item])
-            if isinstance(item, Tree): return "".join([self._recursive_join(child) for child in item.children])
-            
-            if isinstance(item, Token):
-                t = str(item).strip()
-                if t in ["@", "eth"]: return ""
-                if t == "!": return " [경고]"
-
-                # 1. 시간 태그 처리 (T1800 등)
-                if t.startswith('T') and t[1:].isdigit() and len(t) >= 5:
-                    return f"{t[1:3]}시 {t[3:5]}분 "
-                # 단독 T 처리 (뒤에 숫자가 붙을 예정인 경우)
-                if t == "T": return "시간"
-
-                # 2. 복합 태그 분해 (재귀적 심층 분해)
-                # 사전의 키를 긴 순서대로 검사하여 부분 일치를 찾음
-                for tag_key in sorted(self.dict_map.keys(), key=len, reverse=True):
-                    if t.startswith(tag_key):
-                        prefix_val = self.dict_map[tag_key]
-                        remain = t[len(tag_key):]
-                        if not remain:
-                            return prefix_val
-                        # 남은 부분(Mu 등)이 있으면 다시 재귀적으로 번역해서 합침
-                        return prefix_val + self._recursive_join(Token('INNER', remain))
-
-                # 3. 확정/가변 접미사 처리
-                for suffix in ["ic", "ec"]:
-                    if t.endswith(suffix) and t[:-2] in self.dict_map:
-                        return f"{self.dict_map[t[:-2]]}({self.dict_map[suffix]})"
-                
-                return self.dict_map.get(t, t)
-            return str(item)
-
-    def tag_content(self, items):
-        # 1. 모든 아이템을 먼저 번역함
-        translated_items = [self._recursive_join(i) for i in items]
-        
-        # 2. 만약 첫 번째 아이템이 "시간"이라면 뒤의 숫자를 가로채서 합침
-        if translated_items[0] == "시간" and len(items) > 1:
-            num_part = str(items[1])
-            if num_part.isdigit() and len(num_part) >= 4:
-                res = f"{num_part[:2]}시 {num_part[2:4]}분 "
-                # 시간으로 합쳤으므로 나머지 요소(vector_suffix 등)만 붙임
-                for i in items[2:]:
-                    res += self._recursive_join(i)
-                return res
-
-        # 3. 일반적인 태그 처리 (숫자가 속성으로 해석되는 경우)
-        res = translated_items[0]
-        num_str, vec_str, desc_str = "", "", ""
-        
-        for i_idx, i in enumerate(items[1:], 1):
-            if isinstance(i, Token) and i.type == "NUMBER":
-                n = str(i)
-                # 속성 숫자로 해석 (d/v)
-                d = {"1":"10분미만", "2":"30분미만", "3":"1시간미만", "4":"3시간미만", "5":"3시간이상"}.get(n[0], "미정")
-                v = {"1":"안정", "2":"약간불안", "3":"불안정", "4":"빠름", "5":"매우빠름"}.get(n[1] if len(n)>1 else "1", "안정")
-                num_str = f"({d}/{v})"
-            elif isinstance(i, Tree) and i.data == "vector_suffix":
-                vec_str = self.vector_suffix(i.children)
-            else:
-                desc_str += translated_items[i_idx]
-                
-        return f"{res}{num_str}{vec_str}{desc_str}"
-
-    def vector_suffix(self, items):
-        kind = self.dict_map.get(str(items[0]), str(items[0]))
-        num_str = ""
-        for i in items:
-            if isinstance(i, Token) and i.type == "NUMBER":
-                n = str(i)
-                d = {"1":"10분미만", "2":"30분미만", "3":"1시간미만", "4":"3시간미만", "5":"3시간이상"}.get(n[0], "미정")
-                v = {"1":"안정", "2":"약간불안", "3":"불안정", "4":"빠름", "5":"매우빠름"}.get(n[1] if len(n)>1 else "1", "안정")
-                num_str = f"({d}/{v})"
-        return f"{kind}{num_str}"
-
-    def logic_group(self, items): return f"{{{self._recursive_join(items)}}}"
-    def action_group(self, items): return f"[{self._recursive_join(items)}]"
-    def inner_group(self, items): return f"({self._recursive_join(items)})"
-    def atom(self, items): return self._recursive_join(items)
-
-    def target(self, items):
-            # "대상: 대학교" -> "대학교(으)로 향함" 또는 "대학교를 대상으로 함"
-            val = self._recursive_join(items)
-            return f" {Josa(val, '을/를')} 대상으로 "
-
-    def eth_property(self, items): return f" (성격: {self._recursive_join(items)})"
-    def causal_expr(self, items):
-            l, r = self._recursive_join(items[0]), self._recursive_join(items[2])
-            # "A => B" -> "A하면 B하게 된다"
-            op = "a'" in str(items[1])
-            symbol = " 그로인해 " if op else "하고 나서 "
-            return f"{l}{symbol}{r}"
-    def sequence_expr(self, items):
-        l, r = self._recursive_join(items[0]), self._recursive_join(items[2])
-        return f"{l}와 {r}가 동시 발생." if str(items[1]) == "en" else f"{l}, {r}"
-    def expressions(self, items): return "\n".join([self._recursive_join(i).strip() for i in items if i])
-    def start(self, items):
-            res = self._recursive_join(items)
-            # 마지막에 마침표를 찍어 문장 완성
-            if not res.endswith(('.', '?', '!')):
-                res += "함."
-            return res
-
-# 실행 및 테스트
-parser = Lark(my_grammar, start='start', parser='earley')
-translator = LangTranslator()
-
-test_cases = [
-    "{ImAegend @Eceaf} a'{ImAemend @Ym}, ImAulcnow @Ym"
-]
-
-print("## 복합 태그 보정 번역 결과 ##\n")
-for code in test_cases:
-    try:
-        tree = parser.parse(code)
-        print(f"입력: {code}\n번역: {translator.transform(tree)}\n")
-    except Exception as e:
-        print(f"오류: {e}")
+        },
+        "Ena": {
+            "meaning": "에너지",
+            "derivation":{
+                "Enab": "활력"
+            }
+        },
+        "Mita": {
+            "meaning": "의지",
+            "derivation": {
+                "Mitam": "도덕",
+                "Mitat": "의도/목적",
+                "Mitar": "의욕/사기"
+            }
+        },
+        "Aca": {
+            "meaning": "행위 / 행동",
+            "derivation": {
+                "Ae": {
+                    "meaning": "물리적 행동 (Physical Action)",
+                    "derivation":{
+                        "Aeg": "이동",
+                        "Aete": "교육",
+                        "Aewa": "대기(어떤 현상이나 상태가 나타나기를 준비하며 머무르는 행위)",
+                        "Aeta": "사육",
+                        "Aefo": "수리",
+                        "Aef": "비행(하늘을 날다)",
+                        "Aep": "여가 활동",
+                        "Aeup": "가압(힘이나 압력을 가하다)",
+                        "Aec": "폐쇠(통로를 차단하거나 공간을 밀봉함)",
+                        "Aes": "빠른 이동/질주",
+                        "Aet": "투척",
+                        "Aek": "보살핌",
+                        "Aeir":"조력/지원",
+                        "Aegr": "추종/추적",
+                        "Aetir": "모방",
+                        "Aetu": "주입",
+                        "Aelu": "낙하",
+                        "Aei": "도약(바닥을 치고 솟구치다(=점프))",
+                        "Aeal": "음용(액체를 입을 통해 몸 안으로 들이다)",
+                        "Aem": "대면",
+                        "Aema": "제작",
+                        "Aetou": "접촉",
+                        "Aer": "섭취",
+                        "Aeze": "수령(외부에서 오는 물건이나 신호를 내 쪽으로 받아들이는 행위)",
+                        "Aelo": "시청/관찰",
+                        "Aebo": "파괴",
+                        "Aeop": "기립(아래에 있던 몸을 일으켜 세우는 동작(=일어서다))",
+                        "Aeso": "은폐/잠적",
+                        "Aelit": "휴식",
+                        "Aetur": "식재(나무나 풀을 땅에 박아 넣는 행위)",
+                        "Aeur": "착석",
+                        "Aeun": "비존재",
+                        "Aein": "존재",
+                        "Aecr": "개방(통로를 열거나 밀봉을 품)",
+                        "Aeol": "착용",
+                        "Aesl": "취침",
+                        "Aekir": "성장",
+                        "Aeku": "절단",
+                        "Aeca": "파지(물건을 손에 쥐고 놓치지 않게 유지하는 행위)",
+                        "Aeki": "제공",
+                        "Aeba": "사망",
+                        "Aena": "생존",
+                        "Aetat": "포획/검거"
+                    }
+                },
+                "Au": {
+                    "meaning": "언어적 행위",
+                    "derivation":{
+                        "Ausi": "발화(심리적인 생각이나 언어를 입 밖으로 내어 소리를 내는 물리적 행위)",
+                        "Aues": "독해",
+                        "Auer": "작성",
+                        "Auli": "청취",
+                        "Aulo": "고성(목소리를 높여 크게 소리를 냄.)",
+                        "Auls": "귓속말",
+                        "Aulc": "의사소통",
+                        "Ausk": "질문"
+                    }
+                },
+                "Aa": "조작 및 제어 (Manipulation)"
+            }
+        },
+        "Eg": {
+            "meaning": "환경/객체",
+            "derivation": {
+                "Ec": {
+                    "meaning": "위치/장소 / Ec.에곡",
+                    "derivation": {
+                        "Eco": {
+                            "meaning": "장애물/방해 요소"
+                        },
+                        "Ecu": {
+                            "meaning": "안전 구역/안전 시설",
+                            "derivation": {
+                                "Ecuo": "집",
+                                "Ecup": "경찰서",
+                                "Ecuf": "소방서"
+                            }
+                        },
+                        "Eca": {
+                            "meaning": "교육 시설",
+                            "derivation": {
+                                "Ecas": {
+                                    "meaning": "학교",
+                                    "derivation":{
+                                        "Secas": "초등학교",
+                                        "Mecas": "중학교",
+                                        "Hecas": "고등학교",
+                                        "Uecas": "대학교",
+                                        "Cecas": "사립학교"
+                                    }
+                                },
+                                "Ecaa": {
+                                    "meaning": "학원",
+                                    "derivation":{
+                                        "Uecaa": "대학원"
+                                    }
+                                },
+                                "Ecata": "대학교"
+                            }
+                        },
+                        "Ece": {
+                            "meaning": "공공 시설",
+                            "derivation":{
+                                "Eceg": "공원",
+                                "Eceb": "벤치/정자",
+                                "Ecep": "놀이터",
+                                "Ecegb": "놀이공원 / Ekyegb.에켹브",
+                                "Eceu": "산책로",
+                                "Ecenv": "화장실 / Ekyenv.에켼브"
+                            }
+                        },
+                        "Ecei": {
+                            "meaning": "산업 시설",
+                            "derivation":{
+                                "Eceic": "회사",
+                                "Eceif": "생산 시설/공장",
+                                "Eceir": "사무실"
+                            }
+                        },
+                        "Ecea": {
+                            "meaning": "상업 시설",
+                            "derivation": {
+                                "Eceam": "마트/시장",
+                                "Eceas": "상점/편의점",
+                                "Ecear": "식당",
+                                "Eceaf": "카페"
+                            }
+                        },
+                        "Echi": {
+                            "meaning": "의료/복지 시설",
+                            "derivation":{
+                                "Echip": "병원",
+                                "Echiu": "복지관/요양 시설"
+                            }
+                        }
+                    }
+                },
+                "Egob": "사물/도구 / Egob.에곱",
+                "Egev": "환경 조건(날씨, 온도, 조명 등) / Egev.에겝",
+                "Exi": "시스템/프로세스 (기계적 절차) / Egsy.엑시"
+            }
+        },
+        "Pin": {
+            "meaning": "실행/계획",
+            "derivation":{
+                "hold": "일시 중단/보류 / hold. 홀드",
+                "run": "-중 이다 / run.런",
+                "end": "-했다. / end.엔드",
+                "now": "하다",
+                "utur": "할 것 이다."
+            }
+        },
+        "Val": "가치 존재",
+        "Has": "소유/연결"
+    },
+    "fitr": {
+        "#Burnout": "{Tef + KaRHigh + (RaPu)}",
+        "#Flow": "{Tef + Lac + (ZafPu)}"
+    },
+    "Humanity_Tags": {
+        "eta": "비논리적 직관",
+        "ata": "공감/상태 공유",
+        "uta": "상상/가능성"
+    },
+    "Examples": {
+        "{ImAegrun} @Ym": "나는 너에게 가는 중이다.",
+        "{ImAegend @Eceaf} a'{ImAemend @Ym}, ImAulcnow @Ym": "나는 카페에 도착해서 너를 만났고, 너에게 말하고 있다.",
+        "{{ImAegnow} en {YmAegnow}} 'a{ImAemnow @Ym}": "나는 이동하다. 너도 이동하다. 그로인해, 나는 너를 대면하다."
+    },
+    "GlobalSettings": {
+        "meaning": "전체적 설정. 언어의 규칙 정의.",
+        "N1": {
+            "setting": "Scope_Tags는 문장의 끝부분에서는 생략 가능."
+        },
+        "N2": {
+            "setting": "aa는 ae로 발음.",
+            "example": {"Zaa": "Zae(=재)"}
+        },
+        "N3": {
+            "setting": "C는 Ky로 발음."
+        },
+        "N4": {
+            "setting": "J는 Jy로 발음.",
+            "example": {"Ju": "Jyu(=쥬)"}
+        }
+    }
+}
