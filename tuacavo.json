@@ -23,27 +23,27 @@
     "Im": {
         "type": "id tag",
         "meaning": "화자 (나)",
-        "example": "ImAcamo -> 임아카모/내가 조작한다."
+        "example": "ImAa -> 임애/내가 조작한다."
     },
     "Ym": {
         "type": "id tag",
         "meaning": "청자 (너)",
-        "example": "YmAcamo -> 윰아카모/너가 조작한다."
+        "example": "YmAa -> 윰애/너가 조작한다."
     },
     "Om": {
         "type": "id tag",
         "meaning": "제3자/외부 객체",
-        "example": "OmAcamo ->  씀아카모/누군가가 조작한다."
+        "example": "OmAa ->  씀애/누군가가 조작한다."
     },
     "Logic_Gates": {
         "-~ a'- ": {
             "meaning":"인과관계의 흐름 (A 때문에 B가 됨). / >",
-            "example": "{ImAcavo} @Y eth {Lai~ a'Zaa}"
+            "example": "{ImAu} @Y eth {Lai~ a'Zaa}"
         },
         " aya ": "상호 영향 (A와 B가 서로 주고받음) / <>",
         "-~ sa'- ": {
             "meaning": "지연된 인과 (A가 시간이 흐른 뒤 B를 유발함) / ~>",
-            "example": "{OmAcapoSu !~ sa'ImRaf}~ sa'[AcapoCu] eth F"
+            "example": "{OmAeSu !~ sa'ImRaf}~ sa'[AeCu] eth F"
         },
         " | ": "a 혹은 b 중 하나. 예시: A|B. / A so B.에이 소 비",
         " en ": "동시 발생 (A와 B가 동시에 일어남). / =",
@@ -134,9 +134,64 @@
         "Aca": {
             "meaning": "행위 / 행동",
             "derivation": {
-                "Acapo": "물리적 행동 (Physical Action)",
-                "Acavo": "언어적 발화 (Verbal Action)",
-                "Acamo": "조작 및 제어 (Manipulation)"
+                "Ae": {
+                    "meaning": "물리적 행동 (Physical Action)",
+                    "derivation":{
+                        "Aeg": "가다",
+                        "Aeu": "걷다",
+                        "Aefo": "고치다",
+                        "Aef": "날다",
+                        "Aep": "놀다",
+                        "Aeup": "누르다",
+                        "Aec": "닫다",
+                        "Aes": "달리다",
+                        "Ael": "당기다",
+                        "Aet": "던지다",
+                        "Aek": "돌보다",
+                        "Aeir":"돕다",
+                        "Aect": "들다",
+                        "Aegr": "따라가다",
+                        "Aetir": "따라하다",
+                        "Aetu": "액체를 따르다",
+                        "Aelu": "떨어지다",
+                        "Aei": "뛰다",
+                        "Aeal": "마시다",
+                        "Aem": "만나다",
+                        "Aema": "만들다",
+                        "Aetou": "만지다",
+                        "Aer": "먹다",
+                        "Aelr": "밀다",
+                        "Aeze": "받다",
+                        "Aelo": "보다",
+                        "Aebo": "부수다",
+                        "Aeop": "서다",
+                        "Aeso": "숨다",
+                        "Aelit": "쉬다",
+                        "Aetur": "심다",
+                        "Aeur": "앉다",
+                        "Aeun": "없다",
+                        "Aein": "있다",
+                        "Aecr": "열다",
+                        "Aeol": "입다",
+                        "Aesl": "자다",
+                        "Aekir": "자라다",
+                        "Aeku": "자르다",
+                        "Aeca": "잡다",
+                        "Aeki": "주다"
+                    }
+                },
+                "Au": {
+                    "meaning": "언어적 행위",
+                    "derivation":{
+                        "Ausi": "말하다",
+                        "Aues": "읽다",
+                        "Auer": "쓰다",
+                        "Auli": "듣다",
+                        "Aulo": "소리 지르다",
+                        "Auls": "속삭이다"
+                    }
+                },
+                "Aa": "조작 및 제어 (Manipulation)"
             }
         },
         "Eg": {
@@ -242,13 +297,7 @@
         "uta": "상상/가능성"
     },
     "Examples": {
-        "#Burnout~ a'[AcamoHu24] eth Z": "Burnout~ 아'노르 아캬모후테세 느르 에쓰 즈 / 번아웃 상태에서 기계적으로 1시간 이상 빠르게 업무를 조작 중인 현 상황.",
-        "{OmAcapoSu !~ a'ImRaf}~ sa'[AcapoCu] eth F": "의르 옴아캬포수!~ 아'임라흐 우르~ 사'노르 아캬포큐 느르 에쓰 흐 / O의 공격적 행동이 공포를 유발하여 소극적 동작을 취하게 됨.",
-        "{ImAcamo} @Exi eth Pinrun (Trf)~ a'{LiadPu}": "의르 임아캬모 우르 투 엑시 에쓰 핀런 나르 트르흐 므르~ 아'드르 리아드푸 / 나는 시스템을 조작 중이며, 현재 실행 중인 프로세스를 통해 데이터가 증가하고 있음.",
-        "[Egev(rain)] en {T1800}~ sa'[OmAcapoMu]": "노르 에겝 레인 느르 엔 드르 트외메제제 우르~ 사'노르 옴아캬포무 / 18시 정각에 비가 오기 시작함. 이로 인해 외부 객체들의 물리적 활동이 감소함.",
-        "{YmAcavo} @I eth {Liat R ec}~ a'{ImLac~ a'NR?}": "의르 윰아캬보 우르 투 이 에쓰 드르 리아트 르 우크 우르~ 아'드르 임라크~ 아'느르? / 상대방이 나에게 텍스트 정보를 말했으나, 그것은 불확실함. 이에 따라 나는 추론 후 판단을 보류/질문함.",
-        "{ImAcapo} @Egoc(Office) eth T0900 Ju {ImHas @Egob(Laptop)}": "의르 임아캬포 우르 투 에고크 오피스 에쓰 트제카제제 쥬 드르 임헤스 투 에곱 랍톱 / 09시 정각에 사무실로 이동함. 노트북을 소유한 상태임.",
-        "ImnoHas": "임노헤스 / 내 것이 아니다."
+        "{Im(Pinrun(Aeg))} @Ym": "나는 너에게 가는 중이다."
     },
     "GlobalSettings": {
         "meaning": "전체적 설정. 언어의 규칙 정의.",
